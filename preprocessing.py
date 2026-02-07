@@ -9,13 +9,10 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 # Load environment variables
 dotenv.load_dotenv()
 
-# Initialize Clients
-# Ensure OPENAI_API_KEY is in your .env
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 supabase_client = supabase.create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 
 def generate_and_insert_chunks(args): 
-    # Open and read the PDF
     doc = pymupdf.open(args.pdf_path)
     pdf_text = ""
     for page in doc:
