@@ -1,32 +1,27 @@
 import os
 from openai import OpenAI
-from supabase import create_client
+import supabase
 from fetch_codebase import get_relevant_content_for_agent 
 
-# Assuming dotenv is loaded in main or via environment variables
-# from dotenv import load_dotenv
-# load_dotenv()
+dotenv.load_dotenv()
 
 class TechnicalRobustnessAuditor:
-    def __init__(self, supabase_client, openai_api_key):
-        # Initialize clients
-        self.openai_client = OpenAI(api_key=openai_api_key)
-        self.supabase_client = supabase_client
+    def __init__(self):
+        self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.github_token = os.getenv("GITHUB_TOKEN")
+        self.supabase_client = supabase.create_client(
+            os.getenv("SUPABASE_URL"), 
+            os.getenv("SUPABASE_KEY")
+        )
         
     def run_audit(self, repo_url, github_token):
         try:
-            print(f"--- STARTING ROBUSTNESS AUDIT FOR {repo_url} ---")
-            
-            # 1. FETCH RELEVANT CODE (FastAPI routes, Inference logic)
-            # This calls the logic we wrote earlier to get main.py, app.py, etc.
             llm_input, repo_metadata = get_relevant_content_for_agent(
                 agent_type="robustness_auditor", 
                 repo_url=repo_url,
                 token=github_token
             )
             
-            # 2. DETECTION & INITIAL AUDIT (The "Red Team" Scan)
-            # We ask the LLM to act as a penetration tester/auditor
             initial_response = self.openai_client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
@@ -46,28 +41,21 @@ class TechnicalRobustnessAuditor:
                 ]
             )
             audit_text = initial_response.choices[0].message.content
-            print("--- INITIAL VULNERABILITY SCAN ---")
-            print(audit_text[:500] + "...") # Print preview
 
-            # 3. SIMILARITY CHECK (Retrieving Article 15 Rules)
-            # Embed the findings to find the exact legal requirements
             emb_resp = self.openai_client.embeddings.create(
                 model="text-embedding-3-small",
                 input=audit_text
             )
             query_vector = emb_resp.data[0].embedding
             
-            # Query Supabase for Article 15 context
             matches = self.supabase_client.rpc("match_documents", {
                 "query_embedding": query_vector,
                 "match_threshold": 0.40,
                 "match_count": 3
             }).execute()
 
-            rules = [match['content'] for match in matches.data] # Assuming 'content' column
+            rules = [match['chunk_content'] for match in matches.data]
             
-            # 4. SYNTHESIS & REMEDIATION (The "Blue Team" Fix)
-            # Compare findings against the law and generate Fixes
             final_response = self.openai_client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
@@ -95,3 +83,46 @@ class TechnicalRobustnessAuditor:
         except Exception as e:
             print(f"An error occurred in Robustness Auditor: {e}")
             return f"Error: {e}"
+        
+
+def test_robustness_audit():
+    # 1. Verification: Check if keys exist
+    if not os.getenv("OPENAI_API_KEY"):
+        print("❌ Error: OPENAI_API_KEY is missing from .env")
+        return
+    if not os.getenv("SUPABASE_URL"):
+        print("❌ Error: SUPABASE_URL is missing from .env")
+        return
+
+    print("✅ Environment keys loaded.")
+
+    # 2. Initialize the Auditor
+    try:
+        auditor = TechnicalRobustnessAuditor()
+        print("✅ Auditor initialized.")
+    except Exception as e:
+        print(f"❌ Failed to init auditor: {e}")
+        return
+
+    # 3. Define a Test Repo
+    # Use a repo that is likely to have 'robustness' issues (e.g. simple Flask/FastAPI apps)
+    # This one is a simple example, or use your own
+    test_repo = "https://github.com/fastapi/fastapi" 
+    
+    # Get token from env or hardcode for testing
+    token = os.getenv("GITHUB_TOKEN")
+
+    print(f"🚀 Starting Audit on {test_repo}...")
+    
+    # 4. Run the Audit
+    # Since your run_audit is synchronous (no 'async def'), we call it directly
+    report = auditor.run_audit(test_repo, token)
+
+    # 5. Output Result
+    print("\n" + "="*40)
+    print("TEST RESULT:")
+    print("="*40)
+    print(report)
+
+if __name__ == "__main__":
+    test_robustness_audit()

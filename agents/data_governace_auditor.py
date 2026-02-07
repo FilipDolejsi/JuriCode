@@ -1,6 +1,5 @@
 import os
 import dotenv
-from github import Github
 from openai import OpenAI
 import supabase
 from fetch_codebase import get_relevant_content_for_agent 
@@ -9,7 +8,6 @@ dotenv.load_dotenv()
 
 class DataEthicsAuditor:
     def __init__(self):
-        # Initialize clients
         self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.github_token = os.getenv("GITHUB_TOKEN")
         self.supabase_client = supabase.create_client(
