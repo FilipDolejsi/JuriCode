@@ -1,36 +1,53 @@
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-import pymupdf
-import openai
-import supabase 
-import dotenv
 import os
+import dotenv
 import argparse
-from google import genai
+import pymupdf
+from openai import OpenAI
+import supabase 
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+# Load environment variables
 dotenv.load_dotenv()
-client = genai.Client()
-supabase =  supabase.create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
+
+# Initialize Clients
+# Ensure OPENAI_API_KEY is in your .env
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+supabase_client = supabase.create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 
 def generate_and_insert_chunks(args): 
+    # Open and read the PDF
     doc = pymupdf.open(args.pdf_path)
-    pdf = []
+    pdf_text = ""
     for page in doc:
-        pdf.append(page.get_text())
-    pdf_text = "\n".join(pdf)
+        pdf_text += page.get_text() + "\n"
 
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=100,separators=["\n\n", "\n", " ", ""])
+    # Chunk the text
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500, 
+        chunk_overlap=100,
+        separators=["\n\n", "\n", " ", ""]
+    )
     texts = text_splitter.split_text(pdf_text)
 
-    for idx, chunk in enumerate(texts):
-        embedding = client.models.embed_content(
-            model="gemini-embedding-001",
-            contents=chunk
-        )
-        supabase.table("content_embedding").insert({"chunk_index": idx, "chunk_content": chunk, "embedding": embedding.embeddings[0].values}).execute()
+    print(f"Total chunks created: {len(texts)}")
 
+    for idx, chunk in enumerate(texts):
+        response = openai_client.embeddings.create(
+            model="text-embedding-3-small",
+            input=chunk
+        )
+        
+        embedding_vector = response.data[0].embedding
+        supabase_client.table("JuriCode").insert({
+            "chunk_index": idx, 
+            "chunk_content": chunk, 
+            "chunk_embedding": embedding_vector
+        }).execute()
+
+    print("Successfully processed and stored all chunks.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Chunk a PDF and store embeddings in Supabase")
+    parser = argparse.ArgumentParser(description="Chunk a PDF and store OpenAI embeddings in Supabase")
     parser.add_argument("pdf_path", type=str, help="Path to the PDF file")
     args = parser.parse_args()
     generate_and_insert_chunks(args)
