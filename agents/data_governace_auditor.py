@@ -40,9 +40,7 @@ class DataEthicsAuditor:
                 ]
             )
             audit_text = initial_response.choices[0].message.content
-            print("--- EU AI ACT ANALYSIS ---")
-            print(audit_text)
-
+         
             emb_resp = self.openai_client.embeddings.create(
                 model="text-embedding-3-small",
                 input=audit_text
@@ -70,8 +68,7 @@ class DataEthicsAuditor:
                 ]
             )
             
-            print("\n--- FINAL COMPLIANCE ASSESSMENT ---")
-            print(final_response.choices[0].message.content)
+            return final_response.choices[0].message.content
 
         except Exception as e:
             print(f"An error occurred: {e}")
