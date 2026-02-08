@@ -356,3 +356,68 @@ def get_dashboard_stats(request: MultiRepoRequest):
         "risky_repo_urls": risky_repos,
         "repo_details": repo_statuses,
     }
+
+
+def run_explanatory_agent(url):
+
+    try:
+        reports = supabase_client.table("agent_reports")\
+            .select("*")\
+            .eq("repo_url", url)\
+            .in_("agent_type", ["risk_classifier", "data_ethics_auditor", "technical_robustness_auditor"])\
+            .execute().data
+        
+        risk_content = next((r["report_content"] for r in reports if r["agent_type"] == "risk_classifier"), "No Data")
+        data_content = next((r["report_content"] for r in reports if r["agent_type"] == "data_ethics_auditor"), "No Data")
+        robust_content = next((r["report_content"] for r in reports if r["agent_type"] == "technical_robustness_auditor"), "No Data")
+        
+    except Exception as e:
+        print(f"Error fetching sub-reports: {e}")
+        return "Error: Could not retrieve agent reports for analysis."
+
+    prompt = (
+        "You are the AI Chief of Technical Staff. Your goal is to provide a 'Deep Dive' explanatory analysis "
+        "of the target software repository based on findings from three specialized auditing agents.\n\n"
+        
+        "**INPUT DATA:**\n"
+        f"1. RISK AGENT FINDINGS: {risk_content}\n"
+        f"2. DATA GOVERNANCE FINDINGS: {data_content}\n"
+        f"3. ROBUSTNESS FINDINGS: {robust_content}\n\n"
+        
+        "**TASK:**\n"
+        "Synthesize these findings into a narrative Technical Reasoning Report. "
+        "Do NOT use strict legal formatting (Annex IV). Instead, focus on engineering causality.\n\n"
+        
+        "**STRUCTURE:**\n"
+        "1. **Executive Synthesis:** A 3-sentence summary of the overall system health.\n"
+        "2. **The Risk Chain:** Explain specifically *why* the system was flagged. Connect the dots between code features (e.g., 'Face Recognition lib') and the risk classification.\n"
+        "3. **Vulnerability Correlation:** Analyze if the technical weaknesses (found by Robustness Agent) worsen the data risks (found by Data Agent). (e.g., 'The lack of input validation in API endpoints makes the PII data susceptible to injection attacks.')\n"
+        "4. **Architectural Recommendations:** Provide high-level advice on fixing the *root cause*, not just patching bugs."
+    )
+
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system", "content": "You are a senior technical architect explaining complex risks to an engineering team."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        report_text = response.choices[0].message.content
+        
+        save_report(repo_url=url, agent_type="explanatory_analyst", report_content=report_text)
+        
+        return report_text
+
+    except Exception as e:
+        print(f"Error generating explanatory report: {e}")
+        return f"Error generating report: {str(e)}"
+
+
+@app.post("/explanatory-report")
+def get_explanatory_report(item: Input):
+    """
+    Returns a narrative 'Reasoning Report' focusing on architectural analysis
+    instead of legal documentation.
+    """
+    return run_explanatory_agent(item.url)
