@@ -4,44 +4,62 @@ from io import BytesIO
 from fpdf import FPDF
 import os
 from agents.data_governace_auditor import DataEthicsAuditor
+from agents.risk_classifier import RiskClassifier
+from agents.technical_robustness_auditor import TechnicalRobustnessAuditor
+from agents.technical_document_synthesizer import TechnicalDocumentSynthesizer
 import datetime
+from pydantic import BaseModel
+import supabase
 app = FastAPI()
+supabase_client = supabase.create_client(
+    os.getenv("SUPABASE_URL"),os.getenv("SUPABASE_KEY")
+)
 
+class Input(BaseModel):
+    url: str =None
 # --- Agent Wrappers ---
-def save_report(self, repo_url, agent_type, report_content):
+def save_report(repo_url, agent_type, report_content):
     try:
-        # Prepare the data object matching your schema
-        report_data = {
-            "repo_url": repo_url,
-            "agent_type": agent_type,
-            "report_content": report_content,
-            "timestamp": datetime.utcnow().isoformat()}
-        response = self.supabase_client.table("agent_reports").insert(report_data).execute()
+        response = supabase_client.table("agent_reports").select("*").eq("repo_url", repo_url).eq("agent_type", agent_type).execute()
+        if response.data:
+            supabase_client.table("agent_reports").update({
+                "report_content": report_content
+            }).eq("repo_url", repo_url).eq("agent_type", agent_type).execute()
+        else:
+            report_data = {
+                "repo_url": repo_url,
+                "agent_type": agent_type,
+                "report_content": report_content        }
+            response = supabase_client.table("agent_reports").insert(report_data).execute()
     except Exception as e:
         print(f"Error saving report to Supabase: {e}")
         raise
     
-def run_risk_agent(url, auditor):
-    report = auditor.run_risk_classifier(url) 
-    auditor.save_report(url, "risk_classifier", report)
+def run_risk_agent(url):
+    agent = RiskClassifier()
+    report = agent.run_audit(url)
+    response = save_report(repo_url=url, agent_type="risk_classifier", report_content=report)
     return report
 
-def run_data_agent(url, auditor):
-    report = auditor.run_audit(url)
-    auditor.save_report(url, "data_auditor", report)
+def run_data_agent(url):
+    agent = DataEthicsAuditor()
+    report = agent.run_audit(url)
+    response = save_report(repo_url=url, agent_type="data_ethics_auditor", report_content=report)
     return report
 
-def run_robustness_agent(url, auditor):
-    # Specialized logic for technical robustness
-    report = auditor.run_robustness_audit(url)
-    auditor.save_report(url, "robustness_auditor", report)
+def run_robustness_agent(url):
+    agent = TechnicalRobustnessAuditor()
+    report = agent.run_audit(url)
+    response = save_report(repo_url=url, agent_type="technical_robustness_auditor", report_content=  report)
     return report
 
-def run_synthesizer_agent(url, auditor):
-    # Fetches all previous reports from Supabase to create the final summary
-    final_report = auditor.generate_final_summary(url)
-    auditor.save_report(url, "synthesizer", final_report)
-    return final_report
+def run_synthesizer_agent(url):
+    response =supabase_client.table("agent_reports").select("*").eq("repo_url", url).execute()
+    agent = TechnicalDocumentSynthesizer() 
+    filtered_data = supabase_client.table("agent_reports").select("*").eq("repo_url", url).order("created_at", desc=False).execute().data
+    report = agent.generate_report(url, filtered_data[0]["report_content"], filtered_data[1]["report_content"], filtered_data[2]["report_content"])
+    response = save_report(repo_url=url, agent_type="technical_document_synthesizer", report_content=report)
+    return report
 
 # --- PDF Generation Utility ---
 
@@ -63,16 +81,12 @@ def generate_pdf(report_text):
 # --- Main API Endpoint ---
 
 @app.post("/process")
-def process_audit(item: Input):
-    auditor = DataEthicsAuditor()
+def process_audit(item: Input): 
+    run_risk_agent(item.url)
+    run_data_agent(item.url)
+    run_robustness_agent(item.url)
     
-    # 1. Execute agents in sequence
-    run_risk_agent(item.url, auditor)
-    run_data_agent(item.url, auditor)
-    run_robustness_agent(item.url, auditor)
-    
-    # 2. Final Synthesis
-    final_report_text = run_synthesizer_agent(item.url, auditor)
+    final_report_text = run_synthesizer_agent(item.url)
     
     # 3. Generate PDF and stream to user
     pdf_buffer = generate_pdf(final_report_text)
