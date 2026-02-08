@@ -389,10 +389,10 @@ def run_explanatory_agent(url):
         "Do NOT use strict legal formatting (Annex IV). Instead, focus on engineering causality.\n\n"
         
         "**STRUCTURE:**\n"
-        "1. **Executive Synthesis:** A 3-sentence summary of the overall system health.\n"
-        "2. **The Risk Chain:** Explain specifically *why* the system was flagged. Connect the dots between code features (e.g., 'Face Recognition lib') and the risk classification.\n"
-        "3. **Vulnerability Correlation:** Analyze if the technical weaknesses (found by Robustness Agent) worsen the data risks (found by Data Agent). (e.g., 'The lack of input validation in API endpoints makes the PII data susceptible to injection attacks.')\n"
-        "4. **Architectural Recommendations:** Provide high-level advice on fixing the *root cause*, not just patching bugs."
+        "Write in paragraph based, where for each agent below it describes what part of code (if access or possible) violates such AI EU acts (given the agents) and recommend a improvement."
+        "**The Risk Chain:** Explain specifically *why* the system was flagged. Connect the dots between code features (e.g., 'Face Recognition lib') and the risk classification.\n"
+        "**Vulnerability Correlation:** Analyze if the technical weaknesses (found by Robustness Agent) worsen the data risks (found by Data Agent). (e.g., 'The lack of input validation in API endpoints makes the PII data susceptible to injection attacks.')\n"
+        "**Architectural Recommendations:** Provide high-level advice on fixing the *root cause*, not just patching bugs."
     )
 
     try:
