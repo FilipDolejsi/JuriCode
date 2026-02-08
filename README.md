@@ -46,14 +46,7 @@ JuriCode builds an **interactive organizational map**:
 - "High Risk" files glow red—one click reveals the responsible developer, their email, and the specific violation
 - Real-time tracking of who touched what, when, and why
 
-### 3. **Communication Intelligence**
-When a crisis is detected, JuriCode doesn't just log it:
-- Routes information to the right stakeholders
-- Emails the responsible developer with specific remediation code
-- CCs leadership with 3-step technical fixes
-- Activates "War Room" protocols for critical violations
-
-### 4. **Talent Scouting & Silo Management**
+### 3. **Talent Scouting & Silo Management**
 - Identifies your most compliant and robust developers
 - Recommends talent moves to break "Knowledge Silos"
 - Secures your most dangerous projects with the right expertise
@@ -178,28 +171,28 @@ Deep-dive forensics on specific knowledge cluster nodes
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    JuriCode Platform                     │
+│                    JuriCode Platform                    │
 ├─────────────────────────────────────────────────────────┤
 │                                                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
-│  │ Risk         │  │ Data Ethics  │  │ Robustness   │ │
-│  │ Classifier   │  │ Auditor      │  │ Auditor      │ │
-│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘ │
-│         │                  │                  │          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐    │
+│  │ Risk         │  │ Data Ethics  │  │ Robustness   │    │
+│  │ Classifier   │  │ Auditor      │  │ Auditor      │    │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘    │
+│         │                 │                 │            │
 │         └──────────────────┴──────────────────┘          │
 │                            │                             │
-│                  ┌─────────▼─────────┐                  │
-│                  │   Synthesizer     │                  │
-│                  │  (Annex IV Gen)   │                  │
-│                  └─────────┬─────────┘                  │
+│                  ┌─────────▼─────────┐                   │
+│                  │   Synthesizer     │                   │
+│                  │  (Annex IV Gen)   │                   │
+│                  └─────────┬─────────┘                   │
 │                            │                             │
-│         ┌──────────────────┴──────────────────┐         │
-│         │                                      │         │
-│  ┌──────▼───────┐                   ┌─────────▼──────┐ │
-│  │  Knowledge   │                   │  Supabase DB   │ │
-│  │    Graph     │◄──────────────────┤  (Reports +    │ │
-│  │  Generator   │                   │   Vectors)     │ │
-│  └──────────────┘                   └────────────────┘ │
+│         ┌──────────────────┴──────────────────┐          │
+│         │                                     │          │
+│  ┌──────▼───────┐                   ┌─────────▼──────┐   │
+│  │  Knowledge   │                   │  Supabase DB   │   │
+│  │    Graph     │◄──────────────────┤  (Reports +    │   │
+│  │  Generator   │                   │   Vectors)     │   │
+│  └──────────────┘                   └────────────────┘   │
 │                                                          │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -229,23 +222,6 @@ JuriCode currently implements compliance checking for:
 - **Annex IV** - Technical documentation requirements
 
 ---
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our contributing guidelines for:
-- Adding new audit agents
-- Expanding EU AI Act coverage
-- Improving knowledge graph algorithms
-- Frontend enhancements
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
----
-
 ## 🔗 Links
 
 - **Live Platform:** [https://juricode.lovable.app](https://juricode.lovable.app)
@@ -255,14 +231,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 ## 👥 Team
+| Member | Socials |
+|-|-|
+| **Abdalaziz Ayoub**       | [🔗 Github](https://github.com/abdalazizayoub),  [🔗 LinkedIn](https://www.linkedin.com/in/abdalaziz-ayoub-61b190352/) |
+| **Filip Dolejsi**         | [🔗 Github](https://github.com/FilipDolejsi),        [🔗 LinkedIn]() |
 
-Built with ❤️ for the future of responsible AI development.
-
----
-
-## 🆘 Support
-
-For issues, questions, or feature requests, please open an issue on GitHub or contact us through the platform.
 
 ---
 
