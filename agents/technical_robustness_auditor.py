@@ -16,12 +16,12 @@ class TechnicalRobustnessAuditor:
             os.getenv("SUPABASE_KEY")
         )
         
-    def run_audit(self, repo_url, github_token):
+    def run_audit(self, repo_url):
         try:
             llm_input, repo_metadata = get_relevant_content_for_agent(
                 agent_type="robustness_auditor", 
                 repo_url=repo_url,
-                token=github_token
+                token=self.github_token
             )
 
             initial_response = self.openai_client.chat.completions.create(
