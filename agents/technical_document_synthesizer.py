@@ -47,6 +47,7 @@ class TechnicalDocumentSynthesizer:
                             "   - Section C: Technical Robustness & Cybersecurity (based on Robustness Auditor)\n"
                             "3. For every claim, cite the specific Agent Findings provided in the input.\n"
                             "4. Use the retrieved 'Annex IV Requirements' to ensure the language complies with the law."
+                            "5. The header of the final file MUST be 'Annex_IV_Technical_Documentation_{repo_name}' where repo_name is derived from the URL."
                         )
                     },
                     {
