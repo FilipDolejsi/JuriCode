@@ -1,7 +1,9 @@
 import os
+import sys
 import dotenv
 from openai import OpenAI
 import supabase
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from fetch_codebase import get_relevant_content_for_agent 
 
 dotenv.load_dotenv()
