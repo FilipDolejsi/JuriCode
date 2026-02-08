@@ -8,7 +8,7 @@ from fetch_codebase import get_relevant_content_for_agent
 
 dotenv.load_dotenv()
 
-class DataEthicsAuditor:
+class RiskClassifier:
     def __init__(self):
         self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.github_token = os.getenv("GITHUB_TOKEN")
@@ -20,31 +20,35 @@ class DataEthicsAuditor:
     def run_audit(self, repo_url):
         try:
             llm_input, repo_metadata = get_relevant_content_for_agent(
-                agent_type="data_auditor",
+                agent_type="risk_classifier",
                 repo_url=repo_url,
                 token=self.github_token
             )
+
             initial_response = self.openai_client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {
                         "role": "system", 
                         "content": (
-                            "You are a senior Data Ethics Auditor. Scan database schemas and processing scripts for Article 10 compliance. "
-                            "MANDATORY: If you find protected attributes (e.g., gender, race) without bias-mitigation logic, output the violating code snippet. "
-                            "You MUST cite the specific sub-paragraph of Article 10 for every claim (e.g., Article 10(2)(f) for bias examination)."
+                            "You are an EU AI Act Compliance Officer. Scan the provided project documentation "
+                            "to identify its 'Intended Purpose' and 'Use Case'. "
+                            "Look for high-risk keywords defined in Annex III: Biometrics, Critical Infrastructure, "
+                            "Education, Employment, Credit Scoring, Law Enforcement, Migration, Justice. "
+                            "Output a concise summary of what the system does and which category it might belong to."
                         )
                     },
-                    {"role": "user", "content": f"Analyze this codebase: {llm_input}"}
+                    {"role": "user", "content": f"Analyze this codebase metadata: {llm_input}"}
                 ]
             )
             audit_text = initial_response.choices[0].message.content
-         
+
             emb_resp = self.openai_client.embeddings.create(
                 model="text-embedding-3-small",
                 input=audit_text
             )
             query_vector = emb_resp.data[0].embedding
+            
             matches = self.supabase_client.rpc("match_documents", {
                 "query_embedding": query_vector,
                 "match_threshold": 0.40,
@@ -52,22 +56,28 @@ class DataEthicsAuditor:
             }).execute()
 
             rules = [match['chunk_content'] for match in matches.data]
+
             final_response = self.openai_client.chat.completions.create(
                 model="gpt-4o",
                 messages=[
                     {
                         "role": "system", 
                         "content": (
-                            "You are a senior Data Ethics Auditor. Based on the following matched documents from the EU AI Act, "
-                            "determine if the code snippets violate Article 10. For each violation, cite the specific sub-paragraph. "
-                            "If compliant, state 'Compliant with Article 10'. Cite the rules used and create a summary of findings per Annex IV."
+                            "You are a Chief Risk Officer. Based on the matched EU AI Act rules (Annex III / Article 5) and the system analysis, "
+                            "provide a final Legal Classification. "
+                            "TASK: "
+                            "1. State clearly: 'High Risk', 'Prohibited', or 'Low Risk'. "
+                            "2. Cite the specific legal article or annex point (e.g., 'Annex III, Point 4(a)'). "
+                            "3. Explain the reasoning based on the system's intended purpose. "
+                            "4. Mention the 'Risk Owner' (Developer Name) from the metadata in your summary."
                         )
                     },
-                    {"role": "user", "content": f"rules: {rules}, analysis: {audit_text} , repo metadata: {repo_metadata}"}
+                    {"role": "user", "content": f"LEGAL RULES: {rules}\n\nSYSTEM ANALYSIS: {audit_text}\n\nREPO METADATA: {repo_metadata}"}
                 ]
             )
-            
+
             return final_response.choices[0].message.content
 
         except Exception as e:
             print(f"An error occurred: {e}")
+            return f"Error: {e}"

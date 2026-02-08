@@ -81,13 +81,11 @@ def get_relevant_content_for_agent(agent_type: str, repo_url: str, token: str):
                 contents.extend(repo.get_contents(file_content.path))
             else:
                 # Look for API routes or inference logic
-                if "main" in file_content.path or "app" in file_content.path or "inference" in file_content.path or "index" in file_content.path:
+                if ("main" in file_content.path or "app" in file_content.path or "index" in file_content.path) and not file_content.path.lower().endswith(".ipynb"):
                     files_to_fetch.append(file_content.path)
 
-    # 4. SYNTHESIZER (The Briefer)
-    # Source: ReguBots.pdf Step 4 [cite: 1035]
-    # "Scans for 'Approval Flows', 'Kill Switches', or Admin dashboards"
     elif agent_type == "synthesizer":
+        files_to_fetch = ["README.md", "package.json", "requirements.txt", "pyproject.toml"]
         contents = repo.get_contents("")
         while contents:
             file_content = contents.pop(0)
