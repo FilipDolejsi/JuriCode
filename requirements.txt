@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pydantic
+python-dotenv
+openai
+supabase
+PyGithub
+pymupdf
+langchain-text-splitters
